@@ -1,0 +1,15 @@
+id: missing_bank_code
+type: multi_turn
+primary_intent: transfer_with_account_and_missing_bank
+involved_tools:
+- initiate_transfer
+count: 50
+output_file: data/raw/multi_turn/missing_bank_code.jsonl
+constraints:
+  amount: integer_vnd
+  bank_name: short_code_only
+  missing_field: bank_name
+  assistant_responses:
+    assistant_content_turns:
+    - Bạn muốn chuyển đến ngân hàng nào vậy?
+    final_response: Giao dịch chuyển khoản đã được khởi tạo thành công.

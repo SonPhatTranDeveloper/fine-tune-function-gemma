@@ -1,0 +1,45 @@
+Bạn tạo dữ liệu synthetic function-calling cho trợ lý ngân hàng Việt Nam.
+
+Scenario: {scenario_id}
+Type: {scenario_type}
+Tool: {tool_name}
+
+Context mẫu:
+{context_json}
+
+Tool schemas:
+{tool_schemas}
+
+Few-shot examples:
+{examples}
+
+Vietnamese user-language style guide:
+{language_style_guide}
+
+Scenario constraints:
+{scenario_constraints}
+
+Tool result and final response contract:
+- Tool-call samples must use `turns`; do not use top-level `user` + `tool_call` for tool-call records.
+- Every assistant `tool_call` must be followed immediately by a matching `tool` turn.
+- Each successful tool result must use minimal content: {"status": "success"}.
+- After the final tool result, add one assistant content turn.
+- The final assistant content must exactly match constraints.assistant_responses.final_response, không paraphrase.
+
+Tạo {N} samples mới.
+Yêu cầu chung:
+- Output là JSON array hợp lệ, không markdown.
+- Mỗi sample phải có scenario_id, sample_type, context, style, dialect, note.
+- Dates dùng YYYY-MM-DD.
+- bank_name trong tool parameters phải là mã viết tắt như ACB, VCB, TCB, MBB, BIDV.
+- User có thể nói tên ngân hàng đầy đủ/informal; chỉ parameter bank_name cần chuẩn hoá.
+
+Riêng scenario này:
+- User muốn chuyển khoản một lần, đã cung cấp ngân hàng, số tài khoản và số tiền.
+- User nói ngân hàng bằng tên đầy đủ hoặc informal, ví dụ Vietcombank, Ngân hàng Ngoại thương, Techcombank, Quân đội, Á Châu, BIDV.
+- Tool call phải chuẩn hoá bank_name về mã ngắn: VCB, TCB, MBB, ACB, BIDV, VPB, VIB, TPB, STB, HDB, OCB, MSB, SHB, EIB, VAB, BAB, NAB, LPB, SEAB, ABB.
+- from_account luôn là ACC_USER.
+- to_account là số tài khoản được user cung cấp, giữ dạng chuỗi.
+- amount là số nguyên VND, ví dụ 1 triệu -> 1000000, 250k -> 250000.
+- message chỉ có nếu user cung cấp nội dung chuyển khoản.
+- beneficiary_name chỉ có nếu user nói tên người nhận.

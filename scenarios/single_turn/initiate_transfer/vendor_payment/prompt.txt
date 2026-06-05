@@ -1,0 +1,43 @@
+Bạn tạo dữ liệu synthetic function-calling cho trợ lý ngân hàng Việt Nam.
+
+Scenario: {scenario_id}
+Type: {scenario_type}
+Tool: {tool_name}
+
+Context mẫu:
+{context_json}
+
+Tool schemas:
+{tool_schemas}
+
+Few-shot examples:
+{examples}
+
+Vietnamese user-language style guide:
+{language_style_guide}
+
+Scenario constraints:
+{scenario_constraints}
+
+Tool result and final response contract:
+- Tool-call samples must use `turns`; do not use top-level `user` + `tool_call` for tool-call records.
+- Every assistant `tool_call` must be followed immediately by a matching `tool` turn.
+- Each successful tool result must use minimal content: {"status": "success"}.
+- After the final tool result, add one assistant content turn.
+- The final assistant content must exactly match constraints.assistant_responses.final_response, không paraphrase.
+
+Tạo {N} samples mới.
+Yêu cầu chung:
+- Output là JSON array hợp lệ, không markdown.
+- Mỗi sample phải có scenario_id, sample_type, context, style, dialect, note.
+- Dates dùng YYYY-MM-DD.
+- bank_name trong tool parameters phải là mã viết tắt như ACB, VCB, TCB, MBB, BIDV.
+- User có thể nói tên ngân hàng đầy đủ/informal; chỉ parameter bank_name cần chuẩn hoá.
+
+Riêng scenario này:
+- User paste thông tin từ vendor/người bán/hoá đơn.
+- `user` phải là nội dung payment/vendor được paste trực tiếp, không thêm lời nhờ mở đầu như "Anh ơi", "thanh toán giúp em", "chuyển tiền giúp mình", "Bạn ck giúp mình", hoặc câu trò chuyện tương tự.
+- `user` nên bắt đầu trực tiếp bằng label hoặc dòng dữ liệu như "Ngan hang:", "NH:", "Bank:", "STK:", "So TK:", "Amount:", hoặc format một dòng chứa các label.
+- Format có thể lỏng: Ngan hang/NH/Bank, STK/Số TK/TK nhận, Noi dung/memo, So tien/amount.
+- Extract to_account, bank_name, amount, message nếu có.
+- from_account luôn là ACC_USER.

@@ -1,0 +1,13 @@
+id: ambiguous_beneficiary_account_then_transfer
+type: multi_turn
+primary_intent: transfer_saved_recipient_with_ambiguous_account
+involved_tools:
+- get_beneficiary_info
+- initiate_transfer
+count: 50
+output_file: data/raw/multi_turn/ambiguous_beneficiary_account_then_transfer.jsonl
+constraints:
+  bank_name: short_code_only
+  assistant_responses:
+    disambiguation_message: Mình tìm thấy nhiều người thụ hưởng khớp thông tin. Bạn vui lòng chọn đúng tài khoản muốn chuyển.
+    final_response: Giao dịch chuyển khoản đã được khởi tạo thành công.

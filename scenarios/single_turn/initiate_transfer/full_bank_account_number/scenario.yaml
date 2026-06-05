@@ -1,0 +1,11 @@
+id: full_bank_account_number
+type: single_turn
+tool: initiate_transfer
+count: 50
+output_file: data/raw/single_turn/initiate_transfer/full_bank_account_number.jsonl
+constraints:
+  amount: integer_vnd
+  bank_name: short_code_only
+  input_bank_name: full_or_informal_allowed
+  assistant_responses:
+    final_response: Giao dịch chuyển khoản đã được khởi tạo thành công.

@@ -1,0 +1,46 @@
+Bạn tạo dữ liệu synthetic function-calling cho trợ lý ngân hàng Việt Nam.
+
+Scenario: {scenario_id}
+Type: {scenario_type}
+Tool: {tool_name}
+
+Context mẫu:
+{context_json}
+
+Tool schemas:
+{tool_schemas}
+
+Few-shot examples:
+{examples}
+
+Vietnamese user-language style guide:
+{language_style_guide}
+
+Scenario constraints:
+{scenario_constraints}
+
+Tool result and final response contract:
+- Tool-call samples must use `turns`; do not use top-level `user` + `tool_call` for tool-call records.
+- Every assistant `tool_call` must be followed immediately by a matching `tool` turn.
+- Each successful tool result must use minimal content: {"status": "success"}.
+- After the final tool result, add one assistant content turn.
+- The final assistant content must exactly match constraints.assistant_responses.final_response, không paraphrase.
+
+Tạo {N} samples mới.
+Yêu cầu chung:
+- Output là JSON array hợp lệ, không markdown.
+- Mỗi sample phải có scenario_id, sample_type, conversation_type, chain_type, context, style, dialect, note.
+- sample_type phải là `multi_turn`, conversation_type phải là `multi_turn`, chain_type phải là scenario_id.
+- Dates dùng YYYY-MM-DD.
+- bank_name trong tool parameters phải là mã viết tắt như ACB, VCB, TCB, MBB, BIDV.
+- User có thể trả lời tên ngân hàng bằng tên đầy đủ/informal; chỉ parameter bank_name cần chuẩn hoá.
+
+Riêng scenario này:
+- User muốn chuyển khoản, đã cung cấp số tài khoản hoặc số điện thoại người nhận và số tiền, nhưng chưa cung cấp ngân hàng.
+- User không nói tên ngân hàng ở lượt đầu. Không được suy đoán bank_name từ số tài khoản/số điện thoại.
+- User có thể cung cấp nội dung chuyển khoản hoặc tên người nhận ở lượt đầu; nếu có thì giữ lại trong initiate_transfer.
+- Assistant phải hỏi đúng một câu làm rõ, content phải exactly: `Bạn muốn chuyển đến ngân hàng nào vậy?`
+- User trả lời ngân hàng ở lượt tiếp theo, có thể dùng tên đầy đủ hoặc informal như Vietcombank, ngân hàng Ngoại thương, Techcombank, Quân đội, Á Châu, VPBank, BIDV.
+- Assistant gọi initiate_transfer sau khi user trả lời ngân hàng, với from_account `ACC_USER`, to_account đúng từ lượt đầu, bank_name đã chuẩn hoá, amount đúng với user nói ban đầu.
+- Tool call phải chuẩn hoá bank_name về mã ngắn: VCB, TCB, MBB, ACB, BIDV, VPB, VIB, TPB, STB, HDB, OCB, MSB, SHB, EIB, VAB, BAB, NAB, LPB, SEAB, ABB.
+- Sau initiate_transfer, thêm tool result success và final assistant response đúng constraints.assistant_responses.final_response.

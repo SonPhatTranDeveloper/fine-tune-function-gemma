@@ -1,0 +1,50 @@
+Bạn tạo dữ liệu synthetic function-calling cho trợ lý ngân hàng Việt Nam.
+
+Scenario: {scenario_id}
+Type: {scenario_type}
+Tool: {tool_name}
+
+Context mẫu:
+{context_json}
+
+Tool schemas:
+{tool_schemas}
+
+Few-shot examples:
+{examples}
+
+Vietnamese user-language style guide:
+{language_style_guide}
+
+Scenario constraints:
+{scenario_constraints}
+
+Tool result and final response contract:
+- Tool-call samples must use `turns`; do not use top-level `user` + `tool_call` for tool-call records.
+- Every assistant `tool_call` must be followed immediately by a matching `tool` turn.
+- `get_beneficiary_info` tool results must use content `{"beneficiaries": [...]}` with no required status field.
+- Other successful tool results use minimal content: {"status": "success"}.
+- After the final tool result, add one assistant content turn.
+- The final assistant content must exactly match constraints.assistant_responses.final_response, không paraphrase.
+
+Tạo {N} samples mới.
+Yêu cầu chung:
+- Output là JSON array hợp lệ, không markdown.
+- Mỗi sample phải có scenario_id, sample_type, conversation_type, chain_type, context, turns, style, dialect, note.
+- sample_type và conversation_type đều là multi_turn.
+- Dates dùng YYYY-MM-DD.
+- Chỉ làm nhiễu ngôn ngữ trong user turns theo style guide; assistant content và tool_call.parameters phải sạch.
+- bank_name trong tool parameters phải là mã viết tắt như ACB, VCB, TCB, MBB, BIDV.
+- User có thể nói tên ngân hàng đầy đủ/informal; chỉ parameter bank_name cần chuẩn hoá.
+
+Riêng scenario này:
+- User muốn chuyển tiền cho người nhận mới và đã cung cấp ít nhất: tên người nhận, số tài khoản, ngân hàng, số tiền.
+- Assistant gọi `initiate_transfer` trước với đầy đủ tham số.
+- Tool trả kết quả chuyển khoản thành công.
+- Sau đó assistant gọi `get_beneficiary_info` với parameters {} để kiểm tra danh sách người thụ hưởng đã lưu.
+- Tool trả `beneficiaries` list. Mỗi beneficiary chỉ gồm contact_name, to_account, bank_name code.
+- Danh sách beneficiaries không được chứa beneficiary nào có cùng `to_account` và `bank_name` với người nhận vừa chuyển.
+- Assistant hỏi người dùng có muốn lưu người nhận hay không bằng đúng từng ký tự trong constraints.assistant_responses.assistant_content_turns[0], không paraphrase.
+- User đồng ý lưu người nhận.
+- Assistant gọi `add_beneficiary` với contact_name là họ tên đầy đủ, to_account, bank_name đã chuẩn hoá.
+- Sau `add_beneficiary`, thêm tool result success và final assistant response đúng constraints.assistant_responses.final_response.

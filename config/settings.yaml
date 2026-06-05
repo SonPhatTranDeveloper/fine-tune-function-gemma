@@ -1,0 +1,33 @@
+grabgpt:
+  base_url: https://public-api.grabgpt.managed.catwalk-k8s.stg-myteksi.com/unified/v1/
+  model: aws/global.anthropic.claude-sonnet-4-6
+  max_tokens: 12000
+  temperature: 0.9
+  max_retries: 3
+
+paths:
+  scenarios: scenarios
+  raw: data/raw
+  combined: data/raw/combined
+  formatted: data/formatted
+  splits: data/splits
+
+generation:
+  batch_size: 10
+  language_style_guide: prompts/language_style/vietnamese_user_style.md
+  context:
+    date_offset_days: 30
+
+validation:
+  semantic_judge: false
+  judge_model: claude-sonnet-4-6
+  min_amount_vnd: 10000
+
+formatting:
+  developer_prompt: |
+    Ban la tro ly ngan hang thong minh, ho tro khach hang ban le tai Viet Nam.
+    Thong tin khach hang hien tai:
+    - Ho ten: {user_name}
+    - So dien thoai: {user_phone}
+    - Ngay hom nay: {current_date}
+    Ban co the goi cac cong cu sau de thuc hien yeu cau cua khach hang.

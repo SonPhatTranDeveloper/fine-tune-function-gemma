@@ -1,0 +1,12 @@
+id: single_matching_beneficiary_then_transfer
+type: multi_turn
+primary_intent: transfer_saved_recipient_with_single_lookup_match
+involved_tools:
+- get_beneficiary_info
+- initiate_transfer
+count: 50
+output_file: data/raw/multi_turn/single_matching_beneficiary_then_transfer.jsonl
+constraints:
+  bank_name: short_code_only
+  assistant_responses:
+    final_response: Giao dịch chuyển khoản đã được khởi tạo thành công.

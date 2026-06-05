@@ -1,0 +1,34 @@
+[project]
+name = "vietbank-toolcall-generator"
+version = "0.1.0"
+description = "Scenario-pack synthetic generation for Vietnamese banking tool-calling data"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "accelerate>=1.13.0",
+    "anthropic",
+    "datasets>=4.8.5",
+    "evaluate>=0.4.6",
+    "ipywidgets>=8.1.8",
+    "matplotlib>=3.10.9",
+    "nbclient>=0.10.4",
+    "nbformat>=5.10.4",
+    "openai",
+    "protobuf>=7.35.0",
+    "python-dotenv",
+    "pyyaml",
+    "requests",
+    "sentencepiece>=0.2.1",
+    "tensorboard>=2.20.0",
+    "torch>=2.12.0",
+    "transformers",
+    "trl>=1.5.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+]
+
+[tool.uv]
+package = false

@@ -1,0 +1,10 @@
+id: vendor_payment
+type: single_turn
+tool: initiate_transfer
+count: 50
+output_file: data/raw/single_turn/initiate_transfer/vendor_payment.jsonl
+constraints:
+  amount: integer_vnd
+  bank_name: short_code_only
+  assistant_responses:
+    final_response: Giao dịch chuyển khoản đã được khởi tạo thành công.

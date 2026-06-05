@@ -1,0 +1,55 @@
+Bạn tạo dữ liệu synthetic function-calling cho trợ lý ngân hàng Việt Nam.
+
+Scenario: {scenario_id}
+Type: {scenario_type}
+Tool: {tool_name}
+
+Context mẫu:
+{context_json}
+
+Tool schemas:
+{tool_schemas}
+
+Few-shot examples:
+{examples}
+
+Vietnamese user-language style guide:
+{language_style_guide}
+
+Scenario constraints:
+{scenario_constraints}
+
+Tool result and final response contract:
+- Tool-call samples must use `turns`; do not use top-level `user` + `tool_call` for tool-call records.
+- Every assistant `tool_call` must be followed immediately by a matching `tool` turn.
+- `get_beneficiary_info` tool results must use content `{"beneficiaries": [...]}` with no required status field.
+- Other successful tool results use minimal content: {"status": "success"}.
+- After the final tool result, add one assistant content turn.
+- The final assistant content must exactly match constraints.assistant_responses.final_response, không paraphrase.
+
+Tạo {N} samples mới.
+Yêu cầu chung:
+- Output là JSON array hợp lệ, không markdown.
+- Mỗi sample phải có scenario_id, sample_type, context, style, dialect, note.
+- Dates dùng YYYY-MM-DD.
+- bank_name trong tool parameters phải là mã viết tắt như ACB, VCB, TCB, MBB, BIDV.
+- User có thể nói tên ngân hàng đầy đủ/informal; chỉ parameter bank_name cần chuẩn hoá.
+
+Riêng scenario này:
+- User muốn chuyển tiền cho người đã lưu, có nói số tiền, tên người nhận mơ hồ/vắn tắt, và ngân hàng, nhưng không nói số tài khoản.
+- Assistant gọi get_beneficiary_info với parameters {}.
+- Tool trả `beneficiaries` list gồm 4-6 người thụ hưởng đã lưu.
+- Trong danh sách đó phải có đúng 2 hoặc 3 người thụ hưởng khớp tên mơ hồ/vắn tắt và cùng bank_name code với ngân hàng user nói.
+- Danh sách cũng phải có ít nhất 1 beneficiary không khớp, ví dụ khác tên, khác bank_name, hoặc cả hai.
+- Thứ tự `beneficiaries` trong tool result phải được trộn tự nhiên/random. Không đặt toàn bộ beneficiaries khớp ở đầu danh sách.
+- Các beneficiaries khớp nên xuất hiện ở nhiều vị trí khác nhau giữa danh sách: có thể xen kẽ với non-match, nằm giữa/cuối, hoặc có non-match đứng trước. Nếu có 3 matches, không để cả 3 nằm liền nhau ở các vị trí đầu.
+- Mỗi beneficiary chỉ gồm contact_name, to_account, bank_name code.
+- Vì có nhiều tài khoản khớp, assistant phải trả một content turn là JSON object trực tiếp, không đặt JSON trong chuỗi escaped.
+- Assistant `content` phải có đúng schema: `{"message": "<exact disambiguation_message>", "matching_beneficiaries": [...]}`.
+- `message` phải đúng từng ký tự trong constraints.assistant_responses.disambiguation_message, không paraphrase.
+- `matching_beneficiaries` phải là danh sách đã lọc từ tool result, chỉ gồm 2-3 beneficiaries khớp tên mơ hồ/vắn tắt và đúng bank_name user nói, giữ đủ contact_name, to_account, bank_name.
+- `matching_beneficiaries` có thể giữ thứ tự xuất hiện trong tool result, nhưng không cần và không được làm thay đổi yêu cầu tool result phải được trộn.
+- Không đưa beneficiary không khớp vào `matching_beneficiaries`.
+- User trả lời bằng JSON object trực tiếp trong `content`, có đúng to_account và bank_name đã chọn, ví dụ `{"to_account":"0987654321","bank_name":"VCB"}`.
+- Assistant gọi initiate_transfer với from_account `ACC_USER`, to_account và bank_name đúng theo user vừa chọn, amount đúng với user nói ban đầu.
+- Sau initiate_transfer, thêm tool result success và final assistant response đúng constraints.assistant_responses.final_response.
