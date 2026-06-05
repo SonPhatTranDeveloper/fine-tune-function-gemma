@@ -224,38 +224,6 @@ def validate_beneficiary_info_result(content: dict[str, Any]) -> list[str]:
     return errors
 
 
-def validate_transfer_recipient_not_saved(sample: dict[str, Any]) -> list[str]:
-    """Ensure transfer-then-save samples only offer saving unsaved recipients."""
-    if sample.get("scenario_id") != "transfer_then_offer_save_beneficiary":
-        return []
-
-    transfer_params: dict[str, Any] | None = None
-    beneficiary_result: dict[str, Any] | None = None
-    for turn in sample.get("turns", []):
-        if (
-            turn.get("role") == "assistant"
-            and turn.get("tool_call", {}).get("name") == "initiate_transfer"
-        ):
-            transfer_params = turn["tool_call"].get("parameters", {})
-        if turn.get("role") == "tool" and turn.get("name") == "get_beneficiary_info":
-            beneficiary_result = turn.get("content", {})
-
-    if not transfer_params or not beneficiary_result:
-        return []
-
-    to_account = str(transfer_params.get("to_account", ""))
-    bank_name = str(transfer_params.get("bank_name", "")).upper()
-    for beneficiary in beneficiary_result.get("beneficiaries", []):
-        if (
-            str(beneficiary.get("to_account", "")) == to_account
-            and str(beneficiary.get("bank_name", "")).upper() == bank_name
-        ):
-            return [
-                "transferred recipient must not already exist in beneficiaries list"
-            ]
-    return []
-
-
 def validate_ambiguous_beneficiary_selection(sample: dict[str, Any]) -> list[str]:
     """Ensure ambiguous beneficiary samples transfer to the user-selected account."""
     if sample.get("scenario_id") != "ambiguous_beneficiary_account_then_transfer":
@@ -574,7 +542,6 @@ def validate_successful_tool_results(sample: dict[str, Any]) -> list[str]:
                     content,
                 )
             )
-    errors.extend(validate_transfer_recipient_not_saved(sample))
     if saw_tool_call:
         final_turn = turns[-1] if turns else {}
         if final_turn.get("role") != "assistant" or "content" not in final_turn:

@@ -178,18 +178,11 @@ Use the same developer/system context shape that the model saw in training. In F
 Template source: [config/settings.yaml](../config/settings.yaml)
 
 ```text
-Bạn là trợ lý ngân hàng thông minh của một ngân hàng bán lẻ tại Việt Nam, chuyên hỗ trợ khách hàng kiểm tra thông tin tài khoản, xem lịch sử giao dịch, tra cứu người thụ hưởng, khởi tạo chuyển khoản và lưu người nhận mới một cách chính xác, an toàn và dễ hiểu.
+Bạn là trợ lý ngân hàng thông minh, hỗ trợ khách hàng bán lẻ tại Việt Nam.
 Thông tin khách hàng hiện tại:
 - Họ tên: {user_name}
 - Số điện thoại: {user_phone}
 - Ngày hôm nay: {current_date}
-Nhiệm vụ của bạn là hiểu yêu cầu, gọi đúng công cụ khi cần, và trả lời ngắn gọn bằng tiếng Việt.
-Quy tắc:
-- Luôn dùng ACC_USER cho tài khoản hiện tại của khách hàng.
-- Không tự bịa số dư, giao dịch, người thụ hưởng, hay trạng thái chuyển khoản; hãy gọi công cụ phù hợp.
-- Chuẩn hóa số tiền thành số nguyên VND và mã ngân hàng thành mã viết tắt như ACB, VCB, TCB, MBB, BIDV.
-- Khi yêu cầu chuyển tiền thiếu thông tin bắt buộc, hãy hỏi lại đúng thông tin còn thiếu trước khi gọi công cụ.
-- Khi khách hàng hỏi giao dịch theo khoảng thời gian tương đối, hãy tính ngày dựa trên Ngày hôm nay.
 Bạn có thể gọi các công cụ sau để thực hiện yêu cầu của khách hàng.
 ```
 
@@ -198,18 +191,11 @@ Runtime values must be set per customer/session. `current_date` matters for rece
 Concrete example:
 
 ```text
-Bạn là trợ lý ngân hàng thông minh của một ngân hàng bán lẻ tại Việt Nam, chuyên hỗ trợ khách hàng kiểm tra thông tin tài khoản, xem lịch sử giao dịch, tra cứu người thụ hưởng, khởi tạo chuyển khoản và lưu người nhận mới một cách chính xác, an toàn và dễ hiểu.
+Bạn là trợ lý ngân hàng thông minh, hỗ trợ khách hàng bán lẻ tại Việt Nam.
 Thông tin khách hàng hiện tại:
 - Họ tên: Nguyễn Thị Lan
 - Số điện thoại: 0334 424 299
 - Ngày hôm nay: 2026-05-16
-Nhiệm vụ của bạn là hiểu yêu cầu, gọi đúng công cụ khi cần, và trả lời ngắn gọn bằng tiếng Việt.
-Quy tắc:
-- Luôn dùng ACC_USER cho tài khoản hiện tại của khách hàng.
-- Không tự bịa số dư, giao dịch, người thụ hưởng, hay trạng thái chuyển khoản; hãy gọi công cụ phù hợp.
-- Chuẩn hóa số tiền thành số nguyên VND và mã ngân hàng thành mã viết tắt như ACB, VCB, TCB, MBB, BIDV.
-- Khi yêu cầu chuyển tiền thiếu thông tin bắt buộc, hãy hỏi lại đúng thông tin còn thiếu trước khi gọi công cụ.
-- Khi khách hàng hỏi giao dịch theo khoảng thời gian tương đối, hãy tính ngày dựa trên Ngày hôm nay.
 Bạn có thể gọi các công cụ sau để thực hiện yêu cầu của khách hàng.
 ```
 
@@ -403,9 +389,9 @@ High-level loop:
 7. Generate again.
 8. Repeat until text final answer, user clarification, or max tool depth.
 
-Recommended max tool depth: `4`. This covers the longest trained path:
+Recommended max tool depth: `3`. This covers lookup-then-transfer flows:
 
-`initiate_transfer -> get_beneficiary_info -> add_beneficiary`
+`get_beneficiary_info -> initiate_transfer`
 
 Sketch:
 
@@ -514,7 +500,7 @@ Future<Map<String, dynamic>> dispatchBankingTool(
 
 ## Expected Scenario Behaviors
 
-These are the seven trained scenario families. Use them as app QA prompts.
+These are the six trained scenario families. Use them as app QA prompts.
 
 | Scenario | Expected behavior |
 | --- | --- |
@@ -524,14 +510,12 @@ These are the seven trained scenario families. Use them as app QA prompts.
 | `missing_bank_code` | Ask `Bạn muốn chuyển đến ngân hàng nào vậy?`; after user supplies bank, call `initiate_transfer`. |
 | `single_matching_beneficiary_then_transfer` | Call `get_beneficiary_info`; if exactly one saved beneficiary matches name/bank, call `initiate_transfer` without extra clarification. |
 | `ambiguous_beneficiary_account_then_transfer` | Call `get_beneficiary_info`; if multiple beneficiaries match, return candidates and ask user to choose; then call `initiate_transfer`. |
-| `transfer_then_offer_save_beneficiary` | Call `initiate_transfer`, then `get_beneficiary_info`; if recipient is new, ask whether to save; after confirmation call `add_beneficiary`. |
 
 Canonical Vietnamese final messages seen in training:
 
 ```text
 Giao dịch chuyển khoản đã được khởi tạo thành công.
 Đã lấy lịch sử giao dịch theo khoảng thời gian yêu cầu thành công.
-Đã lưu người thụ hưởng mới thành công.
 ```
 
 ## Known Good Python Reference
@@ -614,4 +598,4 @@ If Flutter calls a dangerous or malformed transfer:
 - Create chat with function calling enabled.
 - Implement a strict `dispatchBankingTool` allowlist.
 - Add UI states for loading model, downloading model, generating, tool execution, clarification, and final response.
-- Add QA prompts for all seven scenarios above.
+- Add QA prompts for all six scenarios above.

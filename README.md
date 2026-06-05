@@ -135,9 +135,6 @@ No-tool samples remain top-level `user` plus `assistant_response`.
 }
 ```
 
-For `transfer_then_offer_save_beneficiary`, validation rejects samples where the
-transferred `to_account` and `bank_name` already exist in the beneficiaries list.
-
 No-tool:
 
 ```bash
@@ -151,7 +148,6 @@ uv run python src/generate.py --type multi_turn --scenario ambiguous_beneficiary
 uv run python src/generate.py --type multi_turn --scenario lookup_missing_amount_then_transfer --limit 10
 uv run python src/generate.py --type multi_turn --scenario missing_bank_code --limit 10
 uv run python src/generate.py --type multi_turn --scenario single_matching_beneficiary_then_transfer --limit 10
-uv run python src/generate.py --type multi_turn --scenario transfer_then_offer_save_beneficiary --limit 10
 ```
 
 Generate everything:
