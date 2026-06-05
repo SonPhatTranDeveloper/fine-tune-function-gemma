@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from datetime import date, timedelta
 from typing import Any
 
@@ -33,6 +34,29 @@ YESTERDAY_TO_TODAY_RE = re.compile(r"\bhôm qua\b|\bhom qua\b")
 TODAY_ONLY_RE = re.compile(r"\bhôm nay\b|\bhom nay\b")
 ONE_WEEK_RE = re.compile(r"\btuần\s*(rồi|roi|qua|này|nay)\b")
 ONE_MONTH_RE = re.compile(r"\b(một|mot)\s*tháng\b|\btháng\s*(rồi|roi|qua|này|nay)\b")
+TARGET_RECIPIENT_NAME_RE = re.compile(
+    r"\b(?:cho|toi|den|sang|qua)\s+(?:anh|chi|em|co|chu|bac|ban)\s+([a-z]+)\b"
+)
+LABEL_RECIPIENT_NAME_RE = re.compile(
+    r"\b(?:anh|chi|em|co|chu|bac|ban)\s+([a-z]+)\b"
+)
+RECIPIENT_NAME_STOPWORDS = {
+    "chuyen",
+    "ck",
+    "gui",
+    "giup",
+    "muon",
+    "can",
+    "xem",
+    "kiem",
+    "tra",
+    "ho",
+    "minh",
+    "toi",
+    "den",
+    "sang",
+    "qua",
+}
 SMALL_VI_NUMBERS = {
     "một": 1,
     "mot": 1,
@@ -66,6 +90,53 @@ def is_full_name(value: Any) -> bool:
     ):
         return False
     return len(value.strip().split()) >= 2
+
+
+def normalize_ascii(value: Any) -> str:
+    """Normalize Vietnamese text for loose name matching."""
+    decomposed = unicodedata.normalize("NFD", str(value))
+    without_marks = "".join(
+        character
+        for character in decomposed
+        if unicodedata.category(character) != "Mn"
+    )
+    return without_marks.casefold().replace("đ", "d")
+
+
+def normalized_word_tokens(value: Any) -> list[str]:
+    """Return lowercase ASCII word tokens from a string."""
+    return re.findall(r"[a-z0-9]+", normalize_ascii(value))
+
+
+def contact_given_name(value: Any) -> str:
+    """Return the addressed given name token from a Vietnamese full name."""
+    tokens = normalized_word_tokens(value)
+    return tokens[-1] if tokens else ""
+
+
+def beneficiary_identity(beneficiary: dict[str, Any]) -> tuple[str, str, str]:
+    """Return a stable identity tuple for beneficiary comparisons."""
+    return (
+        str(beneficiary.get("contact_name", "")),
+        str(beneficiary.get("to_account", "")),
+        str(beneficiary.get("bank_name", "")).upper(),
+    )
+
+
+def requested_recipient_given_name(sample: dict[str, Any]) -> str | None:
+    """Infer the recipient given name from kinship-label user phrasing."""
+    first_user_content = ""
+    for turn in sample.get("turns", []):
+        if turn.get("role") == "user":
+            first_user_content = str(turn.get("content", ""))
+            break
+    normalized = normalize_ascii(first_user_content)
+    for pattern in (TARGET_RECIPIENT_NAME_RE, LABEL_RECIPIENT_NAME_RE):
+        for match in pattern.finditer(normalized):
+            candidate = match.group(1)
+            if candidate not in RECIPIENT_NAME_STOPWORDS:
+                return candidate
+    return None
 
 
 def validate_context(sample: dict[str, Any]) -> list[str]:
@@ -307,6 +378,44 @@ def validate_ambiguous_beneficiary_selection(sample: dict[str, Any]) -> list[str
         for item in matching_beneficiaries
     ):
         errors.append("assistant matching beneficiaries must use the transfer bank")
+
+    requested_name = requested_recipient_given_name(sample)
+    expected_matching_beneficiaries: list[dict[str, Any]] = []
+    if not requested_name:
+        errors.append(
+            "ambiguous beneficiary user message must address recipient by kinship label and given name"
+        )
+    else:
+        expected_matching_beneficiaries = [
+            item
+            for item in beneficiaries
+            if str(item.get("bank_name", "")).upper() == transfer_bank
+            and contact_given_name(item.get("contact_name")) == requested_name
+        ]
+        if len(expected_matching_beneficiaries) not in {1, 2, 3}:
+            errors.append(
+                "beneficiary lookup must include 1 to 3 same-bank matches by addressed given name"
+            )
+        if matching_beneficiaries:
+            expected_keys = {
+                beneficiary_identity(item) for item in expected_matching_beneficiaries
+            }
+            actual_keys = {
+                beneficiary_identity(item) for item in matching_beneficiaries
+            }
+            if actual_keys != expected_keys:
+                errors.append(
+                    "assistant matching beneficiaries must equal tool result entries whose given name and bank match the user request"
+                )
+            matching_indices = [
+                index
+                for index, item in enumerate(beneficiaries)
+                if beneficiary_identity(item) in expected_keys
+            ]
+            if matching_indices and matching_indices[0] == 0:
+                errors.append(
+                    "beneficiary lookup must place a non-matching beneficiary before matching beneficiaries"
+                )
     if matching_beneficiaries and not any(
         item not in matching_beneficiaries for item in beneficiaries
     ):

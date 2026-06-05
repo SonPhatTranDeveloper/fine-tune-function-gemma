@@ -1,6 +1,6 @@
 grabgpt:
   base_url: https://public-api.grabgpt.managed.catwalk-k8s.stg-myteksi.com/unified/v1/
-  model: aws/global.anthropic.claude-sonnet-4-6
+  model: aws/global.anthropic.claude-opus-4-6
   max_tokens: 12000
   temperature: 0.9
   max_retries: 3

@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from generator.scenario import discover_scenarios, require_one_scenario  # noqa: E402
+from generate import shuffle_ambiguous_beneficiary_lookup  # noqa: E402
 from validation.rules import validate_sample  # noqa: E402
 
 
@@ -26,7 +27,7 @@ def valid_single_candidate_selection_sample() -> dict:
         "turns": [
             {
                 "role": "user",
-                "content": "chuyển 800k cho anh Hùng bên Vietcombank nha",
+                "content": "chuyển 800k cho chị Phương bên Vietcombank nha",
             },
             {
                 "role": "assistant",
@@ -43,12 +44,17 @@ def valid_single_candidate_selection_sample() -> dict:
                             "bank_name": "VCB",
                         },
                         {
-                            "contact_name": "Nguyễn Minh Hùng",
+                            "contact_name": "Lê Phương Thảo",
+                            "to_account": "0333444555",
+                            "bank_name": "VCB",
+                        },
+                        {
+                            "contact_name": "Nguyễn Minh Phương",
                             "to_account": "0987654321",
                             "bank_name": "ACB",
                         },
                         {
-                            "contact_name": "Nguyễn Văn Hùng",
+                            "contact_name": "Trần Thị Phương",
                             "to_account": "0123456789",
                             "bank_name": "VCB",
                         },
@@ -66,7 +72,7 @@ def valid_single_candidate_selection_sample() -> dict:
                     "message": "Bạn muốn chuyển đến tài khoản nào?",
                     "matching_beneficiaries": [
                         {
-                            "contact_name": "Nguyễn Văn Hùng",
+                            "contact_name": "Trần Thị Phương",
                             "to_account": "0123456789",
                             "bank_name": "VCB",
                         }
@@ -130,6 +136,68 @@ class BeneficiaryAccountSelectionTest(unittest.TestCase):
         self.assertIn(
             "assistant matching beneficiary message must match canonical text",
             errors,
+        )
+
+    def test_rejects_middle_name_match_for_addressed_given_name(self) -> None:
+        sample = valid_single_candidate_selection_sample()
+        wrong_match = {
+            "contact_name": "Lê Phương Thảo",
+            "to_account": "0333444555",
+            "bank_name": "VCB",
+        }
+        sample["turns"][3]["content"]["matching_beneficiaries"] = [wrong_match]
+        sample["turns"][4]["content"] = {
+            "to_account": "0333444555",
+            "bank_name": "VCB",
+        }
+        sample["turns"][5]["tool_call"]["parameters"]["to_account"] = "0333444555"
+
+        errors = validate_sample(sample, self.scenario)
+
+        self.assertIn(
+            "assistant matching beneficiaries must equal tool result entries whose given name and bank match the user request",
+            errors,
+        )
+
+    def test_rejects_matching_beneficiary_at_top(self) -> None:
+        sample = valid_single_candidate_selection_sample()
+        beneficiaries = sample["turns"][2]["content"]["beneficiaries"]
+        beneficiaries.insert(0, beneficiaries.pop(3))
+
+        errors = validate_sample(sample, self.scenario)
+
+        self.assertIn(
+            "beneficiary lookup must place a non-matching beneficiary before matching beneficiaries",
+            errors,
+        )
+
+    def test_shuffle_postprocess_keeps_matching_beneficiary_off_top(self) -> None:
+        sample = valid_single_candidate_selection_sample()
+        beneficiaries = sample["turns"][2]["content"]["beneficiaries"]
+        beneficiaries.insert(0, beneficiaries.pop(3))
+        original_keys = {
+            (
+                item["contact_name"],
+                item["to_account"],
+                item["bank_name"],
+            )
+            for item in beneficiaries
+        }
+
+        shuffle_ambiguous_beneficiary_lookup(sample)
+        shuffled = sample["turns"][2]["content"]["beneficiaries"]
+
+        self.assertNotEqual(shuffled[0]["contact_name"], "Trần Thị Phương")
+        self.assertEqual(
+            original_keys,
+            {
+                (
+                    item["contact_name"],
+                    item["to_account"],
+                    item["bank_name"],
+                )
+                for item in shuffled
+            },
         )
 
 

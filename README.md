@@ -14,7 +14,7 @@ Your existing `.env` was preserved during the clean rebuild.
 
 Generation uses the OpenAI Python SDK pointed at GrabGPT's Unified API base URL,
 configured in `config/settings.yaml` under `grabgpt.base_url`. The default model is
-`openai/gpt-4o`.
+`aws/global.anthropic.claude-opus-4-6`.
 
 ```python
 from openai import OpenAI
@@ -134,6 +134,12 @@ No-tool samples remain top-level `user` plus `assistant_response`.
   ]
 }
 ```
+
+For `ambiguous_beneficiary_account_then_transfer`, the saved-beneficiary list is
+intentionally shuffled. The first returned beneficiary must be a non-match, and
+the assistant filters matches by same bank plus addressed given name only. For
+example, `chị Phương` can match `Trần Thị Phương`, but not `Lê Phương Thảo`
+where `Phương` is a middle name.
 
 No-tool:
 

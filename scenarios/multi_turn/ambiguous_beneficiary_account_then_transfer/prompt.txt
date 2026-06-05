@@ -37,17 +37,19 @@ Yêu cầu chung:
 
 Riêng scenario này:
 - User muốn chuyển tiền cho người đã lưu, có nói số tiền, tên người nhận mơ hồ/vắn tắt, và ngân hàng, nhưng không nói số tài khoản.
+- User phải gọi người nhận bằng cụm quan hệ + tên riêng/given name ngắn, ví dụ `anh Hùng`, `chị Phương`, `em Lan`. Không dùng `anh/chị/em` như đại từ tự xưng ngay trước động từ.
+- Tên được user nói là tên riêng/given name, tức token cuối trong tên người Việt đầy đủ. Ví dụ user nói `chị Phương` hoặc `chi Phuong` thì chỉ match contact_name có token cuối là `Phương` và đúng bank_name; không match `Lê Phương Thảo` vì `Phương` là tên đệm/middle name.
 - Assistant gọi get_beneficiary_info với parameters {}.
 - Tool trả `beneficiaries` list gồm 4-6 người thụ hưởng đã lưu.
-- Trong danh sách đó phải có 1, 2 hoặc 3 người thụ hưởng khớp tên mơ hồ/vắn tắt và cùng bank_name code với ngân hàng user nói.
+- Trong danh sách đó phải có 1, 2 hoặc 3 người thụ hưởng khớp tên riêng/given name user nói và cùng bank_name code với ngân hàng user nói.
 - Danh sách cũng phải có ít nhất 1 beneficiary không khớp, ví dụ khác tên, khác bank_name, hoặc cả hai.
-- Thứ tự `beneficiaries` trong tool result phải được trộn tự nhiên/random. Không đặt toàn bộ beneficiaries khớp ở đầu danh sách.
-- Các beneficiaries khớp nên xuất hiện ở nhiều vị trí khác nhau giữa danh sách: có thể xen kẽ với non-match, nằm giữa/cuối, hoặc có non-match đứng trước. Nếu có 2-3 matches, không để toàn bộ matches nằm liền nhau ở các vị trí đầu.
+- Thứ tự `beneficiaries` trong tool result phải được trộn tự nhiên/random. Không đặt beneficiary khớp ở vị trí đầu danh sách.
+- Item đầu tiên trong `beneficiaries` phải là non-match. Các beneficiaries khớp nên xuất hiện ở nhiều vị trí khác nhau giữa danh sách: có thể xen kẽ với non-match, nằm giữa/cuối, hoặc có non-match đứng trước. Nếu có 2-3 matches, không để toàn bộ matches nằm liền nhau ở các vị trí đầu.
 - Mỗi beneficiary chỉ gồm contact_name, to_account, bank_name code.
 - Assistant phải trả một content turn là JSON object trực tiếp, không đặt JSON trong chuỗi escaped, kể cả khi chỉ có 1 tài khoản khớp.
 - Assistant `content` phải có đúng schema: `{"message": "<exact disambiguation_message>", "matching_beneficiaries": [...]}`.
 - `message` phải đúng từng ký tự trong constraints.assistant_responses.disambiguation_message, không paraphrase.
-- `matching_beneficiaries` phải là danh sách đã lọc từ tool result, chỉ gồm 1-3 beneficiaries khớp tên mơ hồ/vắn tắt và đúng bank_name user nói, giữ đủ contact_name, to_account, bank_name.
+- `matching_beneficiaries` phải là danh sách đã lọc từ tool result, chỉ gồm 1-3 beneficiaries khớp tên riêng/given name user nói và đúng bank_name user nói, giữ đủ contact_name, to_account, bank_name.
 - `matching_beneficiaries` có thể giữ thứ tự xuất hiện trong tool result, nhưng không cần và không được làm thay đổi yêu cầu tool result phải được trộn.
 - Không đưa beneficiary không khớp vào `matching_beneficiaries`.
 - User trả lời bằng JSON object trực tiếp trong `content`, có đúng to_account và bank_name đã chọn, ví dụ `{"to_account":"0987654321","bank_name":"VCB"}`.

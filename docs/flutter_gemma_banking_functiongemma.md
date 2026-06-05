@@ -225,6 +225,11 @@ Optional:
 Purpose: return all saved beneficiaries. No arguments.
 
 The model expects to inspect/filter the returned beneficiaries itself.
+For ambiguous saved-recipient transfers, return the full saved-beneficiary list
+in natural shuffled order, not with matching recipients at the top. The trained
+behavior treats phrases such as `chị Phương` as a given-name match: `Trần Thị
+Phương` is a match, while `Lê Phương Thảo` is not because `Phương` is a middle
+name there.
 
 ### `add_beneficiary`
 
@@ -508,7 +513,7 @@ These are the five trained scenario families. Use them as app QA prompts.
 | `full_bank_account_number` | Call `initiate_transfer`; normalize full/informal bank name to short code and amount to integer VND. |
 | `vendor_payment` | Call `initiate_transfer` from field-style payment details such as bank, account, content, amount. |
 | `missing_bank_code` | Ask `Bạn muốn chuyển đến ngân hàng nào vậy?`; after user supplies bank, call `initiate_transfer`. |
-| `ambiguous_beneficiary_account_then_transfer` | Call `get_beneficiary_info`; return `matching_beneficiaries` with 1-3 candidate accounts and ask `Bạn muốn chuyển đến tài khoản nào?`; after user selects, call `initiate_transfer`. |
+| `ambiguous_beneficiary_account_then_transfer` | Call `get_beneficiary_info`; filter by same bank plus addressed given name only; return `matching_beneficiaries` with 1-3 candidate accounts and ask `Bạn muốn chuyển đến tài khoản nào?`; after user selects, call `initiate_transfer`. |
 
 Canonical Vietnamese final messages seen in training:
 

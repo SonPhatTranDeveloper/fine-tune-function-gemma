@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import sys
 from typing import Any
 
@@ -18,6 +19,8 @@ from generator.scenario import (
 from tools.banking import tool_schemas
 from validation.rules import validate_sample
 
+AMBIGUOUS_BENEFICIARY_SCENARIO = "ambiguous_beneficiary_account_then_transfer"
+
 
 def enrich_sample(sample: dict[str, Any], scenario: Scenario) -> dict[str, Any]:
     """Attach consistent scenario metadata to a generated sample."""
@@ -28,6 +31,62 @@ def enrich_sample(sample: dict[str, Any], scenario: Scenario) -> dict[str, Any]:
     if scenario.type == "multi_turn":
         sample.setdefault("conversation_type", "multi_turn")
         sample.setdefault("chain_type", scenario.id)
+    return sample
+
+
+def beneficiary_key(beneficiary: dict[str, Any]) -> tuple[str, str, str]:
+    """Return a stable key for beneficiary list shuffling."""
+    return (
+        str(beneficiary.get("contact_name", "")),
+        str(beneficiary.get("to_account", "")),
+        str(beneficiary.get("bank_name", "")).upper(),
+    )
+
+
+def shuffle_ambiguous_beneficiary_lookup(sample: dict[str, Any]) -> dict[str, Any]:
+    """Shuffle saved-beneficiary lookups without putting matches first."""
+    if sample.get("scenario_id") != AMBIGUOUS_BENEFICIARY_SCENARIO:
+        return sample
+
+    beneficiary_turn: dict[str, Any] | None = None
+    matching_keys: set[tuple[str, str, str]] = set()
+    for turn in sample.get("turns", []):
+        if turn.get("role") == "tool" and turn.get("name") == "get_beneficiary_info":
+            beneficiary_turn = turn
+        content = turn.get("content")
+        if isinstance(content, dict):
+            matching_value = content.get("matching_beneficiaries")
+            if isinstance(matching_value, list):
+                matching_keys = {
+                    beneficiary_key(item)
+                    for item in matching_value
+                    if isinstance(item, dict)
+                }
+
+    if not beneficiary_turn:
+        return sample
+    content = beneficiary_turn.get("content", {})
+    beneficiaries = content.get("beneficiaries") if isinstance(content, dict) else None
+    if not isinstance(beneficiaries, list) or len(beneficiaries) < 2:
+        return sample
+    if not all(isinstance(item, dict) for item in beneficiaries):
+        return sample
+
+    random.shuffle(beneficiaries)
+    if not matching_keys or beneficiary_key(beneficiaries[0]) not in matching_keys:
+        return sample
+
+    for index, beneficiary in enumerate(beneficiaries[1:], start=1):
+        if beneficiary_key(beneficiary) not in matching_keys:
+            beneficiaries[0], beneficiaries[index] = beneficiaries[index], beneficiaries[0]
+            break
+    return sample
+
+
+def postprocess_sample(sample: dict[str, Any], scenario: Scenario) -> dict[str, Any]:
+    """Apply scenario-specific cleanup before validation and writing."""
+    if scenario.id == AMBIGUOUS_BENEFICIARY_SCENARIO:
+        return shuffle_ambiguous_beneficiary_lookup(sample)
     return sample
 
 
@@ -67,7 +126,7 @@ def dry_run_rows(scenario: Scenario, limit: int | None) -> list[dict[str, Any]]:
     """Return scenario examples as dry-run rows."""
     rows = scenario.examples()
     selected = rows[: limit or 1]
-    return [enrich_sample(dict(row), scenario) for row in selected]
+    return [postprocess_sample(enrich_sample(dict(row), scenario), scenario) for row in selected]
 
 
 def generate_rows(
@@ -80,7 +139,7 @@ def generate_rows(
     generator = ClaudeJsonGenerator(config)
     prompt = render_generation_prompt(scenario, config, count)
     rows = generator.generate_array(prompt)
-    return [enrich_sample(row, scenario) for row in rows]
+    return [postprocess_sample(enrich_sample(row, scenario), scenario) for row in rows]
 
 
 def validate_rows(

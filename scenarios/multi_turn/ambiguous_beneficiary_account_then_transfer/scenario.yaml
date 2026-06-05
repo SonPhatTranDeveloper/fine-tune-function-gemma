@@ -8,6 +8,11 @@ count: 50
 output_file: data/raw/multi_turn/ambiguous_beneficiary_account_then_transfer.jsonl
 constraints:
   bank_name: short_code_only
+  beneficiary_lookup:
+    total_count: 4-6
+    matching_count: 1-3
+    order: shuffled_first_item_non_match
+    name_match: addressed_given_name_only
   assistant_responses:
     disambiguation_message: Bạn muốn chuyển đến tài khoản nào?
     final_response: Giao dịch chuyển khoản đã được khởi tạo thành công.
