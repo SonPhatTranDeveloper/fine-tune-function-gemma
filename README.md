@@ -95,6 +95,7 @@ uv run python src/generate.py --type single_turn --tool get_account_info --scena
 uv run python src/generate.py --type single_turn --tool get_account_info --scenario current_balance --limit 10
 uv run python src/generate.py --type single_turn --tool get_account_info --scenario explicit_date_range --limit 10
 uv run python src/generate.py --type single_turn --tool get_account_info --scenario recent_transactions_limit --limit 10
+uv run python src/generate.py --type single_turn --tool get_account_info --scenario recent_transactions_time_period --limit 10
 uv run python src/generate.py --type single_turn --tool get_account_info --scenario balance_and_recent_transactions --limit 10
 uv run python src/generate.py --type single_turn --tool get_beneficiary_info --scenario saved_recipient --limit 10
 uv run python src/generate.py --type single_turn --tool add_beneficiary --scenario full_name --limit 10

@@ -1,0 +1,58 @@
+Bạn tạo dữ liệu synthetic function-calling cho trợ lý ngân hàng Việt Nam.
+
+Scenario: {scenario_id}
+Type: {scenario_type}
+Tool: {tool_name}
+
+Context mẫu:
+{context_json}
+
+Tool schemas:
+{tool_schemas}
+
+Few-shot examples:
+{examples}
+
+Vietnamese user-language style guide:
+{language_style_guide}
+
+Scenario constraints:
+{scenario_constraints}
+
+Tool result and final response contract:
+- Tool-call samples must use `turns`; do not use top-level `user` + `tool_call` for tool-call records.
+- Every assistant `tool_call` must be followed immediately by a matching `tool` turn.
+- Tool result for `get_account_info` must include `status: "success"`, `account_id`, and `transactions`.
+- Each transaction must include `date`, signed integer `amount`, `account`, and `description`.
+- Every transaction date must be inside the requested date range.
+- After the tool result, add one assistant content turn.
+- The final assistant content must exactly match constraints.assistant_responses.final_response, không paraphrase.
+
+Tạo {N} samples mới.
+Yêu cầu chung:
+- Output là JSON array hợp lệ, không markdown.
+- Mỗi sample phải có scenario_id, sample_type, context, style, dialect, note.
+- Dates dùng YYYY-MM-DD.
+- sample_type phải là `single_turn`.
+- tool phải là `get_account_info`.
+
+Riêng scenario này:
+- User muốn xem lịch sử giao dịch gần đây trong một khoảng thời gian tương đối.
+- Chỉ tạo yêu cầu giao dịch, không tạo yêu cầu số dư hoặc `info_type: both`.
+- Assistant phải gọi `get_account_info` với:
+  - account_id luôn là `ACC_USER`
+  - info_type luôn là `transactions`
+  - from_date và to_date luôn có mặt
+  - to_date bằng đúng context.current_date
+  - limit là số nguyên hợp lý, ví dụ 10
+- Khoảng thời gian được tính bao gồm hôm nay và phải từ 1 đến 30 ngày.
+  - Công thức chung: from_date = current_date - (N - 1) ngày, to_date = current_date.
+  - "hôm nay" => N = 1.
+  - "2 ngày gần đây", "hai hôm nay", "hôm qua tới nay", "từ hôm qua đến giờ" => N = 2.
+  - "7 ngày gần đây", "một tuần", "tuần rồi", "tuần này tới nay" => N = 7.
+  - "hai tuần gần đây" => N = 14.
+  - "30 ngày gần đây", "một tháng gần đây" => N = 30.
+- Phrasing của user phải đa dạng: miền Bắc, miền Nam, ngắn gọn, lịch sự, informal, có thể dùng "sao kê", "lịch sử giao dịch", "giao dịch gần đây", "hôm nay", "hôm qua tới nay", "3 ngày qua", "5 ngày gần đây", "tuần rồi", "10 ngày qua", "hai tuần gần đây", "30 ngày gần đây".
+- Không dùng phrasing mơ hồ nếu không xác định rõ khoảng thời gian trong phạm vi 1-30 ngày.
+- Tool result nên có 1-5 giao dịch với ngày nằm trong khoảng yêu cầu; có thể có cả giao dịch âm và dương.
+- Không tạo giao dịch ngoài khoảng from_date/to_date.

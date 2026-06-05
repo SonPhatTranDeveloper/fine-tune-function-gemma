@@ -1,0 +1,13 @@
+id: recent_transactions_time_period
+type: single_turn
+tool: get_account_info
+count: 10
+output_file: data/raw/single_turn/get_account_info/recent_transactions_time_period.jsonl
+constraints:
+  account_id: ACC_USER
+  info_type: transactions
+  inclusive_today: true
+  min_period_days: 1
+  max_period_days: 30
+  assistant_responses:
+    final_response: Đã lấy lịch sử giao dịch theo khoảng thời gian yêu cầu thành công.

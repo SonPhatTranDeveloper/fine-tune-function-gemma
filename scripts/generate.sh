@@ -3,6 +3,8 @@ set -euo pipefail
 
 # Edit these counts before running. Each value controls one scenario.
 # Set a count to 0 to skip that scenario.
+GET_ACCOUNT_INFO_RECENT_TRANSACTIONS_TIME_PERIOD=10
+
 INITIATE_TRANSFER_VENDOR_PAYMENT=10
 INITIATE_TRANSFER_FULL_BANK_ACCOUNT_NUMBER=10
 
@@ -43,6 +45,8 @@ run_scenario() {
 }
 
 echo "Starting Claude generation. Existing scenario outputs will be appended."
+
+run_scenario "single_turn" "get_account_info" "recent_transactions_time_period" "$GET_ACCOUNT_INFO_RECENT_TRANSACTIONS_TIME_PERIOD"
 
 run_scenario "single_turn" "initiate_transfer" "vendor_payment" "$INITIATE_TRANSFER_VENDOR_PAYMENT"
 run_scenario "single_turn" "initiate_transfer" "full_bank_account_number" "$INITIATE_TRANSFER_FULL_BANK_ACCOUNT_NUMBER"

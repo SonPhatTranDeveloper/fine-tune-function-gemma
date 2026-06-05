@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from generator.scenario import Scenario
@@ -23,6 +23,28 @@ CASUAL_LABELS = (
     "bố ",
 )
 PHONE_RE = re.compile(r"^0\d{3}\s\d{3}\s\d{3}$")
+NUMERIC_DAY_PERIOD_RE = re.compile(r"\b(\d{1,2})\s*(ngày|ngay|hôm|hom)\b")
+NUMERIC_WEEK_PERIOD_RE = re.compile(r"\b(\d{1,2})\s*tuần\b")
+WORD_DAY_PERIOD_RE = re.compile(
+    r"\b(một|mot|hai|ba|bốn|bon|tư|tu|năm|nam)\s*(ngày|ngay|hôm|hom)\b"
+)
+WORD_WEEK_PERIOD_RE = re.compile(r"\b(một|mot|hai|ba|bốn|bon)\s*tuần\b")
+YESTERDAY_TO_TODAY_RE = re.compile(r"\bhôm qua\b|\bhom qua\b")
+TODAY_ONLY_RE = re.compile(r"\bhôm nay\b|\bhom nay\b")
+ONE_WEEK_RE = re.compile(r"\btuần\s*(rồi|roi|qua|này|nay)\b")
+ONE_MONTH_RE = re.compile(r"\b(một|mot)\s*tháng\b|\btháng\s*(rồi|roi|qua|này|nay)\b")
+SMALL_VI_NUMBERS = {
+    "một": 1,
+    "mot": 1,
+    "hai": 2,
+    "ba": 3,
+    "bốn": 4,
+    "bon": 4,
+    "tư": 4,
+    "tu": 4,
+    "năm": 5,
+    "nam": 5,
+}
 
 
 def is_valid_date(value: Any) -> bool:
@@ -369,6 +391,93 @@ def validate_single_matching_beneficiary_transfer(sample: dict[str, Any]) -> lis
     return errors
 
 
+def requested_recent_transaction_period_days(sample: dict[str, Any]) -> int | None:
+    """Infer the requested recent transaction period from the first user message."""
+    turns = sample.get("turns", [])
+    first_user_content = ""
+    for turn in turns:
+        if turn.get("role") == "user":
+            first_user_content = str(turn.get("content", "")).lower()
+            break
+
+    numeric_day_match = NUMERIC_DAY_PERIOD_RE.search(first_user_content)
+    if numeric_day_match:
+        return int(numeric_day_match.group(1))
+
+    numeric_week_match = NUMERIC_WEEK_PERIOD_RE.search(first_user_content)
+    if numeric_week_match:
+        return int(numeric_week_match.group(1)) * 7
+
+    word_day_match = WORD_DAY_PERIOD_RE.search(first_user_content)
+    if word_day_match:
+        return SMALL_VI_NUMBERS.get(word_day_match.group(1))
+
+    word_week_match = WORD_WEEK_PERIOD_RE.search(first_user_content)
+    if word_week_match:
+        word_value = SMALL_VI_NUMBERS.get(word_week_match.group(1))
+        return word_value * 7 if word_value is not None else None
+
+    if YESTERDAY_TO_TODAY_RE.search(first_user_content):
+        return 2
+    if ONE_WEEK_RE.search(first_user_content):
+        return 7
+    if ONE_MONTH_RE.search(first_user_content):
+        return 30
+    if TODAY_ONLY_RE.search(first_user_content):
+        return 1
+    return None
+
+
+def first_tool_call_params(sample: dict[str, Any], tool_name: str) -> dict[str, Any] | None:
+    """Return parameters from the first assistant call to a tool."""
+    for turn in sample.get("turns", []):
+        tool_call = turn.get("tool_call", {}) if turn.get("role") == "assistant" else {}
+        if tool_call.get("name") == tool_name:
+            params = tool_call.get("parameters", {})
+            return params if isinstance(params, dict) else None
+    return None
+
+
+def validate_recent_transactions_time_period(sample: dict[str, Any]) -> list[str]:
+    """Validate inclusive recent-transaction range requests."""
+    if sample.get("scenario_id") != "recent_transactions_time_period":
+        return []
+
+    errors: list[str] = []
+    context = sample.get("context", {})
+    params = first_tool_call_params(sample, "get_account_info") or {}
+
+    if params.get("account_id") != "ACC_USER":
+        errors.append("recent_transactions_time_period account_id must be ACC_USER")
+    if params.get("info_type") != "transactions":
+        errors.append("recent_transactions_time_period info_type must be transactions")
+    if not params.get("from_date") or not params.get("to_date"):
+        errors.append("recent_transactions_time_period requires from_date and to_date")
+
+    try:
+        current_date = date.fromisoformat(str(context.get("current_date")))
+        from_date = date.fromisoformat(str(params.get("from_date")))
+        to_date = date.fromisoformat(str(params.get("to_date")))
+    except (TypeError, ValueError):
+        return errors
+
+    if to_date != current_date:
+        errors.append("recent_transactions_time_period to_date must equal current_date")
+
+    period_days = requested_recent_transaction_period_days(sample)
+    if period_days is None or not 1 <= period_days <= 30:
+        errors.append(
+            "recent_transactions_time_period user request must specify a recent period from 1 to 30 days"
+        )
+    else:
+        expected_from_date = current_date - timedelta(days=period_days - 1)
+        if from_date != expected_from_date:
+            errors.append(
+                "recent_transactions_time_period from_date must match the requested inclusive period"
+            )
+    return errors
+
+
 def validate_turns(sample: dict[str, Any]) -> list[str]:
     """Validate multi-turn records and assistant tool calls inside turns."""
     turns = sample.get("turns")
@@ -564,4 +673,5 @@ def validate_sample(
     errors.extend(validate_canonical_assistant_responses(sample, scenario))
     errors.extend(validate_ambiguous_beneficiary_selection(sample))
     errors.extend(validate_single_matching_beneficiary_transfer(sample))
+    errors.extend(validate_recent_transactions_time_period(sample))
     return errors
