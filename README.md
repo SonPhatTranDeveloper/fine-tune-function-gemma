@@ -147,7 +147,6 @@ Multi-turn:
 uv run python src/generate.py --type multi_turn --scenario ambiguous_beneficiary_account_then_transfer --limit 10
 uv run python src/generate.py --type multi_turn --scenario lookup_missing_amount_then_transfer --limit 10
 uv run python src/generate.py --type multi_turn --scenario missing_bank_code --limit 10
-uv run python src/generate.py --type multi_turn --scenario single_matching_beneficiary_then_transfer --limit 10
 ```
 
 Generate everything:

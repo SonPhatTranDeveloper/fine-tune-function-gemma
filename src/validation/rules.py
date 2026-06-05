@@ -225,7 +225,7 @@ def validate_beneficiary_info_result(content: dict[str, Any]) -> list[str]:
 
 
 def validate_ambiguous_beneficiary_selection(sample: dict[str, Any]) -> list[str]:
-    """Ensure ambiguous beneficiary samples transfer to the user-selected account."""
+    """Ensure beneficiary selection samples transfer to the user-selected account."""
     if sample.get("scenario_id") != "ambiguous_beneficiary_account_then_transfer":
         return []
 
@@ -267,10 +267,7 @@ def validate_ambiguous_beneficiary_selection(sample: dict[str, Any]) -> list[str
 
     transfer_account = str(transfer_params.get("to_account", ""))
     transfer_bank = str(transfer_params.get("bank_name", "")).upper()
-    expected_message = (
-        "Mình tìm thấy nhiều người thụ hưởng khớp thông tin. "
-        "Bạn vui lòng chọn đúng tài khoản muốn chuyển."
-    )
+    expected_message = "Bạn muốn chuyển đến tài khoản nào?"
     if not assistant_selection_payload:
         errors.append("assistant must return matching beneficiaries as a JSON object")
         matching_beneficiaries: list[dict[str, Any]] = []
@@ -289,8 +286,8 @@ def validate_ambiguous_beneficiary_selection(sample: dict[str, Any]) -> list[str
             matching_beneficiaries = []
         else:
             matching_beneficiaries = matching_value
-            if len(matching_beneficiaries) not in {2, 3}:
-                errors.append("assistant must return 2 or 3 matching beneficiaries")
+            if len(matching_beneficiaries) not in {1, 2, 3}:
+                errors.append("assistant must return 1 to 3 matching beneficiaries")
             for item in matching_beneficiaries:
                 if item not in beneficiaries:
                     errors.append(
@@ -327,66 +324,6 @@ def validate_ambiguous_beneficiary_selection(sample: dict[str, Any]) -> list[str
         or str(user_selection_payload.get("bank_name", "")).upper() != transfer_bank
     ):
         errors.append("transfer parameters must match user JSON selection")
-    return errors
-
-
-def validate_single_matching_beneficiary_transfer(sample: dict[str, Any]) -> list[str]:
-    """Ensure single-match beneficiary samples transfer immediately after lookup."""
-    if sample.get("scenario_id") != "single_matching_beneficiary_then_transfer":
-        return []
-
-    turns = sample.get("turns", [])
-    beneficiary_result: dict[str, Any] | None = None
-    transfer_params: dict[str, Any] | None = None
-    lookup_index: int | None = None
-    transfer_index: int | None = None
-    for index, turn in enumerate(turns):
-        if turn.get("role") == "tool" and turn.get("name") == "get_beneficiary_info":
-            beneficiary_result = turn.get("content", {})
-            lookup_index = index
-        if (
-            turn.get("role") == "assistant"
-            and turn.get("tool_call", {}).get("name") == "initiate_transfer"
-        ):
-            transfer_params = turn["tool_call"].get("parameters", {})
-            transfer_index = index
-
-    if not beneficiary_result or not transfer_params:
-        return []
-
-    errors: list[str] = []
-    beneficiaries = beneficiary_result.get("beneficiaries", [])
-    if not isinstance(beneficiaries, list):
-        return []
-    if not all(isinstance(item, dict) for item in beneficiaries):
-        return []
-    if not 4 <= len(beneficiaries) <= 6:
-        errors.append(
-            "single-match beneficiary lookup must return 4 to 6 saved beneficiaries"
-        )
-
-    transfer_account = str(transfer_params.get("to_account", ""))
-    transfer_bank = str(transfer_params.get("bank_name", "")).upper()
-    matching_transfer_targets = [
-        item
-        for item in beneficiaries
-        if str(item.get("to_account", "")) == transfer_account
-        and str(item.get("bank_name", "")).upper() == transfer_bank
-    ]
-    if len(matching_transfer_targets) != 1:
-        errors.append(
-            "single-match transfer target must appear exactly once in beneficiaries"
-        )
-    if not any(item not in matching_transfer_targets for item in beneficiaries):
-        errors.append("single-match lookup must include non-matching beneficiaries")
-    if (
-        lookup_index is None
-        or transfer_index is None
-        or transfer_index != lookup_index + 1
-    ):
-        errors.append(
-            "single-match flow must call initiate_transfer immediately after lookup result"
-        )
     return errors
 
 
@@ -683,6 +620,5 @@ def validate_sample(
         errors.extend(validate_tool_call(sample.get("tool_call"), allow_null=False))
     errors.extend(validate_canonical_assistant_responses(sample, scenario))
     errors.extend(validate_ambiguous_beneficiary_selection(sample))
-    errors.extend(validate_single_matching_beneficiary_transfer(sample))
     errors.extend(validate_recent_transactions_time_period(sample))
     return errors

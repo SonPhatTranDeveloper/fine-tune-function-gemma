@@ -10,7 +10,6 @@ INITIATE_TRANSFER_FULL_BANK_ACCOUNT_NUMBER=10
 
 MULTI_TURN_MISSING_BANK_CODE=10
 MULTI_TURN_AMBIGUOUS_BENEFICIARY_ACCOUNT_THEN_TRANSFER=10
-MULTI_TURN_SINGLE_MATCHING_BENEFICIARY_THEN_TRANSFER=10
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
@@ -52,7 +51,6 @@ run_scenario "single_turn" "initiate_transfer" "full_bank_account_number" "$INIT
 
 run_scenario "multi_turn" "" "missing_bank_code" "$MULTI_TURN_MISSING_BANK_CODE"
 run_scenario "multi_turn" "" "ambiguous_beneficiary_account_then_transfer" "$MULTI_TURN_AMBIGUOUS_BENEFICIARY_ACCOUNT_THEN_TRANSFER"
-run_scenario "multi_turn" "" "single_matching_beneficiary_then_transfer" "$MULTI_TURN_SINGLE_MATCHING_BENEFICIARY_THEN_TRANSFER"
 
 echo "Combining scenario outputs..."
 uv run python src/combine.py --type all

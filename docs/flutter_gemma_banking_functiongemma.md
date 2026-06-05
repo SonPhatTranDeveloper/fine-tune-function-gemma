@@ -500,7 +500,7 @@ Future<Map<String, dynamic>> dispatchBankingTool(
 
 ## Expected Scenario Behaviors
 
-These are the six trained scenario families. Use them as app QA prompts.
+These are the five trained scenario families. Use them as app QA prompts.
 
 | Scenario | Expected behavior |
 | --- | --- |
@@ -508,8 +508,7 @@ These are the six trained scenario families. Use them as app QA prompts.
 | `full_bank_account_number` | Call `initiate_transfer`; normalize full/informal bank name to short code and amount to integer VND. |
 | `vendor_payment` | Call `initiate_transfer` from field-style payment details such as bank, account, content, amount. |
 | `missing_bank_code` | Ask `Bạn muốn chuyển đến ngân hàng nào vậy?`; after user supplies bank, call `initiate_transfer`. |
-| `single_matching_beneficiary_then_transfer` | Call `get_beneficiary_info`; if exactly one saved beneficiary matches name/bank, call `initiate_transfer` without extra clarification. |
-| `ambiguous_beneficiary_account_then_transfer` | Call `get_beneficiary_info`; if multiple beneficiaries match, return candidates and ask user to choose; then call `initiate_transfer`. |
+| `ambiguous_beneficiary_account_then_transfer` | Call `get_beneficiary_info`; return `matching_beneficiaries` with 1-3 candidate accounts and ask `Bạn muốn chuyển đến tài khoản nào?`; after user selects, call `initiate_transfer`. |
 
 Canonical Vietnamese final messages seen in training:
 
@@ -598,4 +597,4 @@ If Flutter calls a dangerous or malformed transfer:
 - Create chat with function calling enabled.
 - Implement a strict `dispatchBankingTool` allowlist.
 - Add UI states for loading model, downloading model, generating, tool execution, clarification, and final response.
-- Add QA prompts for all six scenarios above.
+- Add QA prompts for all five scenarios above.
