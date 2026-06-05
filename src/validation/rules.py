@@ -161,7 +161,9 @@ def validate_get_account_info_result(
     errors: list[str] = []
     info_type = params.get("info_type")
     if content.get("account_id") != params.get("account_id"):
-        errors.append("get_account_info result.account_id must match request account_id")
+        errors.append(
+            "get_account_info result.account_id must match request account_id"
+        )
 
     has_balance = "balance" in content
     has_transactions = "transactions" in content
@@ -216,7 +218,9 @@ def validate_beneficiary_info_result(content: dict[str, Any]) -> list[str]:
                 errors.append(f"beneficiary {index}.{key} is required")
         bank_name = str(beneficiary.get("bank_name", "")).upper()
         if bank_name and bank_name not in BANK_CODES:
-            errors.append(f"beneficiary {index}.bank_name must be a supported short bank code")
+            errors.append(
+                f"beneficiary {index}.bank_name must be a supported short bank code"
+            )
     return errors
 
 
@@ -228,7 +232,10 @@ def validate_transfer_recipient_not_saved(sample: dict[str, Any]) -> list[str]:
     transfer_params: dict[str, Any] | None = None
     beneficiary_result: dict[str, Any] | None = None
     for turn in sample.get("turns", []):
-        if turn.get("role") == "assistant" and turn.get("tool_call", {}).get("name") == "initiate_transfer":
+        if (
+            turn.get("role") == "assistant"
+            and turn.get("tool_call", {}).get("name") == "initiate_transfer"
+        ):
             transfer_params = turn["tool_call"].get("parameters", {})
         if turn.get("role") == "tool" and turn.get("name") == "get_beneficiary_info":
             beneficiary_result = turn.get("content", {})
@@ -243,7 +250,9 @@ def validate_transfer_recipient_not_saved(sample: dict[str, Any]) -> list[str]:
             str(beneficiary.get("to_account", "")) == to_account
             and str(beneficiary.get("bank_name", "")).upper() == bank_name
         ):
-            return ["transferred recipient must not already exist in beneficiaries list"]
+            return [
+                "transferred recipient must not already exist in beneficiaries list"
+            ]
     return []
 
 
@@ -284,7 +293,9 @@ def validate_ambiguous_beneficiary_selection(sample: dict[str, Any]) -> list[str
     if not all(isinstance(item, dict) for item in beneficiaries):
         return []
     if not 4 <= len(beneficiaries) <= 6:
-        errors.append("ambiguous beneficiary lookup must return 4 to 6 saved beneficiaries")
+        errors.append(
+            "ambiguous beneficiary lookup must return 4 to 6 saved beneficiaries"
+        )
 
     transfer_account = str(transfer_params.get("to_account", ""))
     transfer_bank = str(transfer_params.get("bank_name", "")).upper()
@@ -299,7 +310,9 @@ def validate_ambiguous_beneficiary_selection(sample: dict[str, Any]) -> list[str
         if set(assistant_selection_payload) != {"message", "matching_beneficiaries"}:
             errors.append("assistant matching beneficiary JSON has invalid fields")
         if assistant_selection_payload.get("message") != expected_message:
-            errors.append("assistant matching beneficiary message must match canonical text")
+            errors.append(
+                "assistant matching beneficiary message must match canonical text"
+            )
         matching_value = assistant_selection_payload.get("matching_beneficiaries")
         if not isinstance(matching_value, list) or not all(
             isinstance(item, dict) for item in matching_value
@@ -312,10 +325,14 @@ def validate_ambiguous_beneficiary_selection(sample: dict[str, Any]) -> list[str
                 errors.append("assistant must return 2 or 3 matching beneficiaries")
             for item in matching_beneficiaries:
                 if item not in beneficiaries:
-                    errors.append("assistant matching beneficiaries must be copied from tool result")
+                    errors.append(
+                        "assistant matching beneficiaries must be copied from tool result"
+                    )
                     break
             if all(item in matching_beneficiaries for item in beneficiaries):
-                errors.append("assistant must filter a subset, not return the full beneficiary list")
+                errors.append(
+                    "assistant must filter a subset, not return the full beneficiary list"
+                )
     if not user_selection_payload:
         errors.append("user selection must be a JSON object")
     elif set(user_selection_payload) != {"to_account", "bank_name"}:
@@ -325,8 +342,12 @@ def validate_ambiguous_beneficiary_selection(sample: dict[str, Any]) -> list[str
         for item in matching_beneficiaries
     ):
         errors.append("assistant matching beneficiaries must use the transfer bank")
-    if matching_beneficiaries and not any(item not in matching_beneficiaries for item in beneficiaries):
-        errors.append("beneficiary lookup must include at least one non-matching beneficiary")
+    if matching_beneficiaries and not any(
+        item not in matching_beneficiaries for item in beneficiaries
+    ):
+        errors.append(
+            "beneficiary lookup must include at least one non-matching beneficiary"
+        )
     if not any(
         str(item.get("to_account", "")) == transfer_account
         and str(item.get("bank_name", "")).upper() == transfer_bank
@@ -372,7 +393,9 @@ def validate_single_matching_beneficiary_transfer(sample: dict[str, Any]) -> lis
     if not all(isinstance(item, dict) for item in beneficiaries):
         return []
     if not 4 <= len(beneficiaries) <= 6:
-        errors.append("single-match beneficiary lookup must return 4 to 6 saved beneficiaries")
+        errors.append(
+            "single-match beneficiary lookup must return 4 to 6 saved beneficiaries"
+        )
 
     transfer_account = str(transfer_params.get("to_account", ""))
     transfer_bank = str(transfer_params.get("bank_name", "")).upper()
@@ -383,11 +406,19 @@ def validate_single_matching_beneficiary_transfer(sample: dict[str, Any]) -> lis
         and str(item.get("bank_name", "")).upper() == transfer_bank
     ]
     if len(matching_transfer_targets) != 1:
-        errors.append("single-match transfer target must appear exactly once in beneficiaries")
+        errors.append(
+            "single-match transfer target must appear exactly once in beneficiaries"
+        )
     if not any(item not in matching_transfer_targets for item in beneficiaries):
         errors.append("single-match lookup must include non-matching beneficiaries")
-    if lookup_index is None or transfer_index is None or transfer_index != lookup_index + 1:
-        errors.append("single-match flow must call initiate_transfer immediately after lookup result")
+    if (
+        lookup_index is None
+        or transfer_index is None
+        or transfer_index != lookup_index + 1
+    ):
+        errors.append(
+            "single-match flow must call initiate_transfer immediately after lookup result"
+        )
     return errors
 
 
@@ -428,7 +459,9 @@ def requested_recent_transaction_period_days(sample: dict[str, Any]) -> int | No
     return None
 
 
-def first_tool_call_params(sample: dict[str, Any], tool_name: str) -> dict[str, Any] | None:
+def first_tool_call_params(
+    sample: dict[str, Any], tool_name: str
+) -> dict[str, Any] | None:
     """Return parameters from the first assistant call to a tool."""
     for turn in sample.get("turns", []):
         tool_call = turn.get("tool_call", {}) if turn.get("role") == "assistant" else {}
@@ -515,7 +548,9 @@ def validate_successful_tool_results(sample: dict[str, Any]) -> list[str]:
         next_turn = turns[index + 1]
         tool_name = turn["tool_call"].get("name")
         if next_turn.get("role") != "tool":
-            errors.append(f"turn {index} tool_call must be followed immediately by a tool result")
+            errors.append(
+                f"turn {index} tool_call must be followed immediately by a tool result"
+            )
             continue
         if next_turn.get("name") != tool_name:
             errors.append(f"turn {index} tool result name must match tool_call name")
@@ -528,7 +563,9 @@ def validate_successful_tool_results(sample: dict[str, Any]) -> list[str]:
                 for err in validate_beneficiary_info_result(content)
             )
         elif content.get("status") != "success":
-            errors.append(f"turn {index + 1} tool result content.status must be success")
+            errors.append(
+                f"turn {index + 1} tool result content.status must be success"
+            )
         elif tool_name == "get_account_info":
             errors.extend(
                 f"turn {index + 1}: {err}"
@@ -541,7 +578,9 @@ def validate_successful_tool_results(sample: dict[str, Any]) -> list[str]:
     if saw_tool_call:
         final_turn = turns[-1] if turns else {}
         if final_turn.get("role") != "assistant" or "content" not in final_turn:
-            errors.append("tool-call samples must end with a final assistant content turn")
+            errors.append(
+                "tool-call samples must end with a final assistant content turn"
+            )
     return errors
 
 
@@ -573,8 +612,12 @@ def validate_clarification_turns(sample: dict[str, Any]) -> list[str]:
         if turn.get("role") == "assistant" and "tool_call" in turn
     ]
     if not tool_calls:
-        errors.append("clarification requires an assistant tool_call after the user answer")
-    elif sample.get("tool") and tool_calls[-1]["tool_call"].get("name") != sample["tool"]:
+        errors.append(
+            "clarification requires an assistant tool_call after the user answer"
+        )
+    elif (
+        sample.get("tool") and tool_calls[-1]["tool_call"].get("name") != sample["tool"]
+    ):
         errors.append("clarification final tool_call must match sample.tool")
     errors.extend(validate_successful_tool_results(sample))
     return errors
@@ -636,7 +679,9 @@ def validate_canonical_assistant_responses(
     if "final_response" in responses and "turns" in sample:
         contents = assistant_content_turns(sample)
         if not contents or contents[-1] != responses["final_response"]:
-            errors.append("final assistant response must exactly match scenario canonical final_response")
+            errors.append(
+                "final assistant response must exactly match scenario canonical final_response"
+            )
     return errors
 
 
@@ -657,9 +702,8 @@ def validate_sample(
             errors.extend(validate_successful_tool_results(sample))
     if sample_type == "clarification":
         errors.extend(validate_clarification_turns(sample))
-    elif (
-        "turns" not in sample
-        and (sample_type == "multi_turn" or sample.get("conversation_type") == "multi_turn")
+    elif "turns" not in sample and (
+        sample_type == "multi_turn" or sample.get("conversation_type") == "multi_turn"
     ):
         errors.extend(validate_turns(sample))
     elif sample_type == "no_tool":
