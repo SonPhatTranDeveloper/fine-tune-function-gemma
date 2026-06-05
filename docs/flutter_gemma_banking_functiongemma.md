@@ -60,6 +60,12 @@ Current status:
 - Python/Hugging Face model: ready.
 - Flutter Gemma runtime file: must be created and uploaded.
 
+Conversion notebook:
+
+```text
+notebooks/convert_functiongemma_to_flutter_gemma.ipynb
+```
+
 Recommended creator flow:
 
 1. Download or use the local HF model folder for `phattrandeveloper/functiongemma-270m-function-calling`.
