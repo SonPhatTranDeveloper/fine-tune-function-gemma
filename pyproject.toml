@@ -24,6 +24,8 @@ dependencies = [
     "tensorboard>=2.20.0",
     "tensorflow>=2.21.0",
     "torch>=2.12.0",
+    "torchaudio>=2.11.0",
+    "torchvision>=0.27.0",
     "transformers",
     "trl>=1.5.1",
 ]
@@ -35,3 +37,6 @@ dev = [
 
 [tool.uv]
 package = false
+
+[[tool.uv.index]]
+url = "https://download.pytorch.org/whl/cu121"
